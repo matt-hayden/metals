@@ -36,10 +36,11 @@ class Table:
 		else:
 			self.fields = None
 		self.rows = list(map(self.factory, iterable))
-		if not self.fields:
-			ncols = len(self.rows[0])
-			self.fields = [ Field("F{:{width}d}".format(i, width=1 if (ncols < 11) else 3)) for i in range(ncols) ]
-		self.detect_column_widths()
+		if self.rows:
+			if not self.fields:
+				ncols = len(self.rows[0])
+				self.fields = [ Field("F{:{width}d}".format(i, width=1 if (ncols < 11) else 3)) for i in range(ncols) ]
+			self.detect_column_widths()
 	def __iter__(self):
 		return iter(self.rows)
 	@property
@@ -64,7 +65,7 @@ class Table:
 			for f in self.fields:
 				if 'width' in f.format_kwargs:
 					w = f.format_kwargs['width']
-					header.append("{:^{width}}".format(f.name[:w], width=w))
+					header.append("{:^{width}}".format(f.name[:(w or None)], width=w))
 				else:
 					header.append(f.name)
 			yield sep.join(header)

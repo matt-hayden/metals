@@ -3,59 +3,9 @@
 import os, os.path
 import sys
 
-from SimpleTable import Table
 
-try:
-	"""
-	If used in a package, package logging functions are used instead of stderr.
-	"""
-	from . import debug, info, warning, error, fatal
-except:
-	def error(*args, **kwargs):
-		print(*args, file=sys.stderr, **kwargs)
-	debug = info = warning = fatal = error
-
-try:
-	from pymediainfo import MediaInfo
-except ImportError:
-	fatal("pymediainfo not found")
-	fatal("pip install --user git+git://github.com/sbraz/pymediainfo")
-	sys.exit(1)
-
-try:
-	import multiprocessing
-	pool = multiprocessing.Pool()
-	map = pool.map
-except:
-	debug("multiprocessing not used")
-
-
-def probe(*args, **kwargs):
-	mi = MediaInfo.parse(*args, **kwargs)
-	results = [ ('number of tracks', len(mi.tracks)) ]
-	y = results.append
-	for track in mi.tracks:
-		if track.track_type == 'General':
-			if len(mi.tracks) == 1:
-				return None
-			y(("bandwidth kb",	track.overall_bit_rate/1e3))
-			y(("container",		track.format))
-			y(("duration",		track.duration))
-			y(("file size",		track.file_size))
-		elif track.track_type == 'Audio':
-			y(("audio bandwidth kb",	track.bit_rate/1e3))
-			y(("audio channels",		track.channel_s))
-			y(("audio codec",			track.codec))
-		elif track.track_type == 'Video':
-			y(("height",				track.height))
-			y(("width",					track.width))
-			y(("video bandwidth Mb",	track.bit_rate/1e6))
-			y(("video codec",			track.codec))
-			y(("video framerate",		track.frame_rate))
-	return results
-
-def probe_many(args, **kwargs):
-	return dict(zip(args, map(probe, args)))
+from .probe import probe_many
+from .SimpleTable import Table
 
 
 def get_table(columns, lookup, **kwargs):
@@ -74,6 +24,8 @@ def get_table(columns, lookup, **kwargs):
 
 
 def main(args=None):
+	import multiprocessing
+	
 	args = args or sys.argv[1:]
 	"""
 	You can customize the columns and their display like so:
@@ -85,13 +37,17 @@ def main(args=None):
 					    ('bandwidth kb', '{:,.0f}"),					# Format is ,.0f
 					    ('video codec',  '{:^{width}}', "{'width': 4}", # Format is centered, width forced to 4
 	"""
-	table = get_table([  'container',
-	                    ('bandwidth kb', '{:,.0f}'),
-						 'height',
-						 'width',
-						 'video codec',
-						 'audio codec' ], probe_many(args))
-	table.sort(key=lambda row: -row[4])
+	with multiprocessing.Pool() as pool:
+		if not sys.flags.interactive:
+			map = pool.map
+		table = get_table([  'container',
+							('bandwidth kb', '{:,.0f}'),
+							 'height',
+							 'width',
+							 'video codec',
+							 'audio codec' ], probe_many(args, map=map))
+		table.sort(key=lambda row: -row[4])
+	print(table)
 
 
 if __name__ == '__main__':
