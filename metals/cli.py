@@ -24,9 +24,10 @@ def get_table(columns, lookup, **kwargs):
 
 
 def main(args=None):
+	import glob
 	import multiprocessing
 	
-	args = args or sys.argv[1:]
+	args = args or sys.argv[1:] or glob.glob('*.*')
 	"""
 	You can customize the columns and their display like so:
 
