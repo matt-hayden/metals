@@ -1,0 +1,9 @@
+name		metals
+version		v1.0.0-dev2
+url		https://github.com/matt-hayden/metals
+keywords	mediainfo
+author		Matt Hayden
+author_email	hayden+github@morp.holo.gy
+license		The Unlicense
+
+List metadata on the command line, like ls
